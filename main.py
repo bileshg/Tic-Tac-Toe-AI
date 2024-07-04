@@ -23,7 +23,7 @@ class RandomBot(Bot):
 
     def move(self):
         empty_boxes = Game.get_empty_box_positions(self.game.board)
-        return random.choice(empty_boxes)
+        return Game.get_box_number(*random.choice(empty_boxes))
 
 
 class MinimaxBot(Bot):
@@ -38,7 +38,7 @@ class MinimaxBot(Bot):
         empty_boxes = Game.get_empty_box_positions(self.game.board)
 
         for i, j in empty_boxes:
-            box = i * 3 + j + 1
+            box = Game.get_box_number(i, j)
             board[i][j] = self.symbol
             scores[box] = self._minimax(board, 'X' if self.symbol == 'O' else 'O')
             board[i][j] = str(box)
@@ -76,7 +76,7 @@ class MinimaxBot(Bot):
         empty_boxes = Game.get_empty_box_positions(board)
 
         for i, j in empty_boxes:
-            box = i * 3 + j + 1
+            box = Game.get_box_number(i, j)
             board[i][j] = symbol
             scores.append(self._minimax(board, 'X' if symbol == 'O' else 'O'))
             board[i][j] = str(box)
@@ -87,8 +87,12 @@ class MinimaxBot(Bot):
 class Game:
 
     def __init__(self):
-        self.board = [[f'{i * 3 + j + 1}' for j in range(3)] for i in range(3)]
+        self.board = [[f'{Game.get_box_number(i, j)}' for j in range(3)] for i in range(3)]
         self.turn = 0
+        
+    @staticmethod
+    def get_box_number(row, col):
+        return row * 3 + col + 1
 
     @staticmethod
     def get_empty_box_positions(board):
@@ -156,18 +160,25 @@ class Game:
 
 def game_loop(game: Game, human_goes_first: bool):
     human_first_mod = 0 if human_goes_first else 1
-    bot = MinimaxBot(game, not human_goes_first)
+
+    bot_type = input("Should the bot be smart? (y/n): ")
+    if bot_type.lower().startswith('y'):
+        bot = MinimaxBot(game, not human_goes_first)
+    else:
+        bot = RandomBot(game, not human_goes_first)
 
     while True:
         game.display_board()
 
         if game.turn % 2 == human_first_mod:
+            player = 'You'
             try:
                 box = int(input("Box: ".rjust(12)))
             except ValueError as e:
                 print(f"[Invalid input]{str(e)}")
                 continue
         else:
+            player = 'Bot'
             box = bot.move()
 
         winner = game.move(box)
@@ -176,12 +187,12 @@ def game_loop(game: Game, human_goes_first: bool):
             if winner == 'Tie':
                 print(" Tied! ".center(13, '='))
             else:
-                print(f"{winner} wins!")
+                print(f" {player} Won ".center(13, '*'))
             break
 
 
 def main():
-    print(" Tic-Tac-Toe ".center(13, '='))
+    print(" Tic-Tac-Toe ".center(32, '='))
 
     wanna_play = True
     while wanna_play:
